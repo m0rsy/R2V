@@ -1,13 +1,14 @@
 # R2V — Real to Virtual 3D Asset Platform
 
 <p align="center">
-  <img src="frontend/assets/R2V.png" alt="R2V Logo" width="220" />
+  <img src="frontend/assets/R2V.png" alt="R2V Logo" width="400" />
 </p>
 
 <p align="center">
   <strong>AI-powered platform for generating, scanning, managing, and selling 3D assets.</strong>
 </p>
 ---
+
 ## Overview
 
 **R2V (Real to Virtual)** is a full-stack graduation project that transforms ideas, prompts, and real-world object photos into usable 3D assets. The platform combines a premium Flutter Web interface, a FastAPI backend, asynchronous Celery workers, object storage, marketplace features, social interactions, payments, and AI/photogrammetry pipelines.
