@@ -1,21 +1,18 @@
 # R2V — Real to Virtual 3D Asset Platform
 
 <p align="center">
-  <img src="frontend/assets/R2V.png" alt="R2V Logo" width="120" />
+  <img src="frontend/assets/R2V.png" alt="R2V Logo" width="220" />
 </p>
 
 <p align="center">
   <strong>AI-powered platform for generating, scanning, managing, and selling 3D assets.</strong>
 </p>
-
 ---
-
 ## Overview
 
 **R2V (Real to Virtual)** is a full-stack graduation project that transforms ideas, prompts, and real-world object photos into usable 3D assets. The platform combines a premium Flutter Web interface, a FastAPI backend, asynchronous Celery workers, object storage, marketplace features, social interactions, payments, and AI/photogrammetry pipelines.
 
 The main goal is to help creators, students, freelancers, game developers, AR/VR builders, and 3D artists quickly create, preview, publish, and monetize 3D models from text prompts, images, or photo scans.
-
 ---
 
 ## Core Features
@@ -221,7 +218,3 @@ R2V/
 R2V is an active graduation project and full-stack prototype. The repository includes the main Flutter frontend, FastAPI backend, storage/payment/authentication foundations, AI job adapters, and a photogrammetry package. The external GPU AI runtime is configured through Modal endpoints and should be deployed separately from the main application.
 
 ---
-
-<p align="center">
-  Built with Flutter, FastAPI, Stable Diffusion, Hunyuan3D, and a lot of 3D ambition.
-</p>
