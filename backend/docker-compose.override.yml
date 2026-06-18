@@ -1,0 +1,25 @@
+# Dev override — automatically merged by `docker compose` when present.
+#
+# WHY THIS EXISTS:
+# docker/Dockerfile.api copies the source (`COPY app /app/app`) into the image at
+# BUILD time, and the base docker-compose.yml mounts only ./jobs. That means a
+# running `api` container keeps the code from the last `docker compose build` —
+# editing backend/app/... does NOT change the running app until you rebuild.
+#
+# This override live-mounts the local source into the container and runs uvicorn
+# with --reload, so backend edits take effect immediately (and migrations run on
+# start). To run the production image instead, use:
+#   docker compose -f docker-compose.yml up -d
+services:
+  api:
+    volumes:
+      - ./app:/app/app
+      - ./alembic:/app/alembic
+      - ./alembic.ini:/app/alembic.ini:ro
+    command: >
+      bash -lc "alembic upgrade head &&
+      uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+
+  worker:
+    volumes:
+      - ./app:/app/app

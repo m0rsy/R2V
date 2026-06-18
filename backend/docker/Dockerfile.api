@@ -1,0 +1,112 @@
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    autoconf \
+    autoconf-archive \
+    automake \
+    bison \
+    build-essential \
+    ca-certificates \
+    cmake \
+    colmap \
+    curl \
+    git \
+    libboost-date-time-dev \
+    libboost-filesystem-dev \
+    libboost-iostreams-dev \
+    libboost-program-options-dev \
+    libboost-serialization-dev \
+    libboost-system-dev \
+    libboost-thread-dev \
+    libcgal-dev \
+    libeigen3-dev \
+    libflann-dev \
+    libgl1 \
+    libgl1-mesa-dev \
+    libglib2.0-0 \
+    libglu1-mesa-dev \
+    libjpeg-dev \
+    libjxl-dev \
+    libnanoflann-dev \
+    libpng-dev \
+    libsm6 \
+    libtiff-dev \
+    libtool \
+    libopencv-dev \
+    libx11-dev \
+    libxext6 \
+    libxft-dev \
+    libxi-dev \
+    libxinerama-dev \
+    libxrandr-dev \
+    libxrender1 \
+    libxtst-dev \
+    nasm \
+    ninja-build \
+    pkg-config \
+    gfortran \
+    xorg-dev \
+ && rm -rf /var/lib/apt/lists/*
+
+COPY pyproject.toml /app/pyproject.toml
+
+RUN pip install --no-cache-dir -U pip && pip install --no-cache-dir .
+
+ARG OPENMVS_VERSION=v2.4.0
+
+RUN git clone --depth 1 https://github.com/cdcseacave/VCG.git /tmp/vcglib
+
+RUN git clone --depth 1 --branch ${OPENMVS_VERSION} https://github.com/cdcseacave/openMVS.git /tmp/openMVS
+
+# Fix OpenMVS build with Debian/OpenCV versions that do not include cv::IMWRITE_JPEGXL_QUALITY
+RUN sed -i 's/cv::IMWRITE_JPEGXL_QUALITY/cv::IMWRITE_JPEG_QUALITY/g' /tmp/openMVS/libs/Common/Types.inl
+
+RUN cmake -S /tmp/openMVS -B /tmp/openMVS/build -G Ninja \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/opt/openmvs-install \
+    -DVCG_ROOT=/tmp/vcglib \
+    -DOpenMVS_BUILD_VIEWER=OFF \
+    -DOpenMVS_USE_PYTHON=OFF \
+    -DOpenMVS_USE_BREAKPAD=OFF \
+    -DOpenMVS_USE_CUDA=OFF \
+    -DOpenMVS_ENABLE_TESTS=OFF
+
+RUN cmake --build /tmp/openMVS/build --target InterfaceCOLMAP DensifyPointCloud ReconstructMesh TextureMesh -j"$(nproc)"
+
+# Do not run `cmake --install` because it can fail trying to install optional tools that were not built.
+# Instead, copy only the OpenMVS tools this project needs.
+RUN mkdir -p /opt/photogrammetry-tools/colmap/bin \
+    /opt/photogrammetry-tools/openmvs/bin \
+    /opt/openmvs-install/bin \
+ && ln -sf /usr/bin/colmap /opt/photogrammetry-tools/colmap/bin/colmap \
+ && for tool in InterfaceCOLMAP DensifyPointCloud ReconstructMesh TextureMesh; do \
+      tool_path="$(find /tmp/openMVS/build -type f -name "$tool" | head -n 1)"; \
+      if [ -z "$tool_path" ]; then \
+        echo "ERROR: $tool was not found after OpenMVS build"; \
+        find /tmp/openMVS/build -maxdepth 5 -type f | sort; \
+        exit 1; \
+      fi; \
+      cp "$tool_path" "/opt/photogrammetry-tools/openmvs/bin/$tool"; \
+      chmod +x "/opt/photogrammetry-tools/openmvs/bin/$tool"; \
+      ln -sf "/opt/photogrammetry-tools/openmvs/bin/$tool" "/opt/openmvs-install/bin/$tool"; \
+    done \
+ && rm -rf /tmp/openMVS /tmp/vcglib
+
+COPY app /app/app
+COPY alembic /app/alembic
+COPY alembic.ini /app/alembic.ini
+COPY docker/entrypoint.api.sh /app/entrypoint.sh
+
+RUN mkdir -p /app/jobs
+RUN chmod +x /app/entrypoint.sh
+
+EXPOSE 8000
+
+CMD ["/app/entrypoint.sh"]
+

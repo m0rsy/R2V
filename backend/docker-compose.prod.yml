@@ -1,0 +1,38 @@
+# =============================================================================
+# R2V PRODUCTION OVERLAY  (Caddy HTTPS + static Flutter web)
+# -----------------------------------------------------------------------------
+# Use ONLY together with the base file, and WITHOUT the dev override:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# Naming both -f files explicitly means docker-compose.override.yml (the dev
+# --reload / live-mount file) is NOT loaded, so the API runs the baked image via
+# its entrypoint (alembic upgrade head + uvicorn, no reload).
+#
+# This overlay only ADDS the Caddy edge. The base file already:
+#   - binds Postgres/Redis/MinIO/API host ports to 127.0.0.1 (never public)
+#   - keeps db/redis/minio reachable to api/worker over the internal network
+# so the only ports exposed to the internet are 80/443 on Caddy below.
+# =============================================================================
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"   # HTTP/3
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Flutter web build output (run `flutter build web --release ...` locally
+      # and upload it here, or build on the server). Served as the site root.
+      - ../frontend/build/web:/srv/frontend:ro
+      - caddy_data:/data       # persisted TLS certificates / ACME account
+      - caddy_config:/config   # persisted Caddy autosave config
+    depends_on:
+      - api
+      - minio
+
+volumes:
+  caddy_data:
+  caddy_config:

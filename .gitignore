@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+.env
+.venv/
+venv/
+outputs/
+generated/
+models/
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+
+# Flutter / Dart
+.dart_tool/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Node
+node_modules/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

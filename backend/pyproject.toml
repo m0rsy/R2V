@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
+
+[project]
+name = "r2v-backend"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+  "pydantic>=2.7",
+  # Required for Pydantic's EmailStr/email validation
+  "email-validator>=2.1",
+  "pydantic-settings>=2.4",
+  "SQLAlchemy>=2.0",
+  "alembic>=1.13",
+  "psycopg[binary]>=3.2",
+  "passlib[argon2]>=1.7.4",
+  "python-jose[cryptography]>=3.3",
+  "python-multipart>=0.0.9",
+  "redis>=5.0",
+  "celery>=5.4",
+  "boto3>=1.34",
+  "stripe>=8.0",
+  "orjson>=3.10",
+  "httpx>=0.27",
+  "pytest>=8.2",
+  "pytest-asyncio>=0.23",
+  "ruff>=0.6",
+  "black>=24.8",
+  "tenacity>=9.0",
+  "Pillow>=10.4",
+  "numpy>=2.0",
+  "trimesh>=4.4",
+  "opencv-python-headless>=4.10",
+  "scipy>=1.14",
+  "networkx>=3.3",
+]
+
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E","F","I","B","UP","SIM","C4","RUF"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

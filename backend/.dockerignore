@@ -1,0 +1,41 @@
+# Keep the Docker build context small and free of secrets / local state.
+# The image only needs: app/, alembic/, alembic.ini, pyproject.toml, docker/.
+
+# Secrets and local env files (NEVER bake these into an image)
+.env
+.env.*
+!.env.example
+!.env.local.example
+
+# Local databases / SQLite dev DB
+*.db
+*.sqlite
+*.sqlite3
+
+# Python caches and build artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+
+# Runtime job working data (regenerated at runtime; never needed at build time)
+jobs/
+
+# Tooling / IDE / OS noise
+.github/
+.vscode/
+.idea/
+*.log
+.runlogs/
+.tmp_openmvs/
+.tmp_openmvs_full/
+
+# Local dev helpers not used inside the container
+start-local-api.ps1
+tests/

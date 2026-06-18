@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Primary SEO meta tags -->
+  <title>RealTwoVirtual (R2V) — AI 3D Model Generation &amp; Photogrammetry Platform</title>
+  <meta name="description" content="RealTwoVirtual (R2V) helps creators generate production-ready 3D models from text, images, and real-world scans using AI generation, photogrammetry, and a 3D asset marketplace.">
+  <meta name="keywords" content="AI 3D model generator, text to 3D, image to 3D, photogrammetry, 3D marketplace, R2V, RealTwoVirtual">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#0C0414">
+  <link rel="canonical" href="https://realtwovirtual.com/">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="RealTwoVirtual">
+  <meta property="og:title" content="RealTwoVirtual (R2V) — AI 3D Model Generation">
+  <meta property="og:description" content="Create 3D models from text, images, and real-world scans with R2V.">
+  <meta property="og:url" content="https://realtwovirtual.com/">
+  <meta property="og:image" content="https://realtwovirtual.com/icons/Icon-512.png">
+
+  <!-- Twitter card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="RealTwoVirtual (R2V) — AI 3D Model Generation">
+  <meta name="twitter:description" content="Create 3D models from text, images, and real-world scans with R2V.">
+  <meta name="twitter:image" content="https://realtwovirtual.com/icons/Icon-512.png">
+
+  <!-- Structured data: Organization + WebSite (helps Google show brand name) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "name": "RealTwoVirtual",
+        "alternateName": "R2V",
+        "url": "https://realtwovirtual.com/",
+        "logo": "https://realtwovirtual.com/icons/Icon-512.png"
+      },
+      {
+        "@type": "WebSite",
+        "name": "RealTwoVirtual",
+        "alternateName": "R2V",
+        "url": "https://realtwovirtual.com/"
+      }
+    ]
+  }
+  </script>
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="R2V">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <link rel="manifest" href="manifest.json">
+
+  <!--
+    Auth inputs: kill the browser's autofill / DOM-input background so there is
+    no dark rectangle painted behind the typed text inside our glass fields.
+    Flutter web overlays a real <input>/<textarea> for IME + autofill; Chrome
+    forces a background on :-webkit-autofill that shows through the canvas.
+    These rules make that overlay fully transparent (visible text is painted by
+    Flutter on the canvas, so this only removes the stray box, not the text).
+  -->
+  <style>
+    input, textarea {
+      background-color: transparent !important;
+      background-image: none !important;
+    }
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus,
+    input:-webkit-autofill:active,
+    textarea:-webkit-autofill,
+    textarea:-webkit-autofill:hover,
+    textarea:-webkit-autofill:focus {
+      -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
+      box-shadow: 0 0 0 1000px transparent inset !important;
+      -webkit-text-fill-color: transparent !important;
+      caret-color: transparent !important;
+      transition: background-color 9999s ease-in-out 0s !important;
+    }
+  </style>
+
+  <!-- Self-hosted model-viewer (was unpkg CDN). Bundle lives in web/ and is copied to build/web/ at build time. -->
+  <script type="module" src="model-viewer.min.js"></script>
+
+  <!--
+    Synchronized turntable for the home page "Drag to compare texture" slider ONLY.
+    The textured and untextured layers are two independent <model-viewer> instances;
+    native auto-rotate would drift (the textured GLB is ~4x larger and loads later),
+    so it is disabled on both (Flutter side). This single requestAnimationFrame loop
+    derives one angle from a shared clock and writes the SAME camera-orbit to every
+    matching element each frame, so the two layers rotate in perfect lock-step and
+    the wipe reveals only the texture difference.
+
+    Scope is strict: it only touches <model-viewer> elements whose id starts with
+    "r2v-slider-" (set by _ModelComparisonSlider). It cannot affect Capture View,
+    marketplace/profile thumbnails, the model detail page, or AI chat.
+  -->
+  <script>
+    (function () {
+      var SPEED_DEG_PER_SEC = 24;  // turntable speed
+      var PHI = "75deg";           // polar angle  (must match Flutter _initialOrbit)
+      var RADIUS = "105%";         // framing dist (must match Flutter _initialOrbit)
+      function tick() {
+        var els = document.querySelectorAll('model-viewer[id^="r2v-slider-"]');
+        if (els.length) {
+          var angle = ((performance.now() / 1000) * SPEED_DEG_PER_SEC) % 360;
+          var orbit = angle.toFixed(3) + "deg " + PHI + " " + RADIUS;
+          for (var i = 0; i < els.length; i++) {
+            var el = els[i];
+            // Snap exactly to the shared angle each frame (no per-element easing)
+            // so a late-loading layer locks on instantly instead of drifting in.
+            if (el.getAttribute("interpolation-decay") !== "0") {
+              el.setAttribute("interpolation-decay", "0");
+            }
+            el.setAttribute("camera-orbit", orbit);
+          }
+        }
+        window.requestAnimationFrame(tick);
+      }
+      window.requestAnimationFrame(tick);
+    })();
+  </script>
+</head>
+<body>
+  <noscript>
+    <main style="max-width:720px;margin:48px auto;padding:0 20px;font-family:system-ui,Arial,sans-serif;color:#1E293B;line-height:1.5;">
+      <h1>R2V — AI 3D Generation &amp; Photogrammetry Platform</h1>
+      <p>R2V is an AI 3D generation and photogrammetry platform. Create 3D models from text, images, and real-world scans.</p>
+      <ul>
+        <li>Generate production-ready 3D models from text and images using AI.</li>
+        <li>Reconstruct real-world objects with photogrammetry scans.</li>
+        <li>Marketplace for buying, selling, and sharing 3D assets.</li>
+      </ul>
+      <p>This application requires JavaScript to run. Please enable JavaScript to use R2V.</p>
+    </main>
+  </noscript>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

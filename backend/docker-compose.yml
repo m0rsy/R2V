@@ -1,0 +1,126 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      # Dev defaults (r2v/r2v). In production set POSTGRES_PASSWORD in backend/.env
+      # to a strong value AND use the same password inside DATABASE_URL.
+      POSTGRES_USER: ${POSTGRES_USER:-r2v}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-r2v}
+      POSTGRES_DB: ${POSTGRES_DB:-r2v}
+    ports:
+      # Bind to localhost only. Never expose Postgres publicly. Local dev still
+      # reaches it at localhost:5432; containers use the "db" service name.
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - r2v_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-r2v} -d $${POSTGRES_DB:-r2v}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      # Bind to localhost only. Never expose Redis publicly.
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:RELEASE.2025-07-23T15-54-02Z
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin}
+    ports:
+      # Bind to localhost only. The S3 API (9000) is reached internally by the
+      # api/worker containers via the "minio" service name and, in production, is
+      # published to the internet ONLY through Caddy at files.realtwovirtual.com.
+      # The console (9001) stays local-only (reach it via an SSH tunnel).
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    volumes:
+      - r2v_minio:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  minio-init:
+    image: minio/mc:RELEASE.2025-08-13T08-35-41Z
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      S3_ENDPOINT_URL: ${S3_ENDPOINT_URL:-http://minio:9000}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-minioadmin}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-minioadmin}
+      S3_BUCKET_MARKETPLACE_MODELS: ${S3_BUCKET_MARKETPLACE_MODELS:-r2v-marketplace-models}
+      S3_BUCKET_MARKETPLACE_THUMBS: ${S3_BUCKET_MARKETPLACE_THUMBS:-r2v-marketplace-thumbs}
+      S3_BUCKET_SCANS_RAW: ${S3_BUCKET_SCANS_RAW:-r2v-user-scans-raw}
+      S3_BUCKET_JOB_OUTPUTS: ${S3_BUCKET_JOB_OUTPUTS:-r2v-job-outputs}
+      S3_BUCKET_CHAT_ATTACHMENTS: ${S3_BUCKET_CHAT_ATTACHMENTS:-r2v-chat-attachments}
+    entrypoint: ["/bin/sh", "/entrypoint.minio_init.sh"]
+    volumes:
+      - ./docker/entrypoint.minio_init.sh:/entrypoint.minio_init.sh:ro
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    env_file: .env
+    environment:
+      PHOTOGRAMMETRY_PIPELINE_ROOT: /photogrammetry_pipeline_project
+      PHOTOGRAMMETRY_JOBS_ROOT: /app/jobs
+      PHOTOGRAMMETRY_TOOLS_ROOT: /opt/photogrammetry-tools
+    ports:
+      # Default host port changed to avoid common conflicts (e.g. another dev service already using 18000).
+      # You can override it by setting API_PORT in .env (example: API_PORT=18080)
+      # Bound to localhost only: in production Caddy proxies api.realtwovirtual.com
+      # to the internal "api:8000"; the API is never published to the internet directly.
+      - "127.0.0.1:${API_PORT:-18001}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    volumes:
+      - ./jobs:/app/jobs
+      - ../photogrammetry_pipeline_project:/photogrammetry_pipeline_project
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.worker
+    env_file: .env
+    environment:
+      PHOTOGRAMMETRY_PIPELINE_ROOT: /photogrammetry_pipeline_project
+      PHOTOGRAMMETRY_JOBS_ROOT: /app/jobs
+      PHOTOGRAMMETRY_TOOLS_ROOT: /opt/photogrammetry-tools
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    volumes:
+      - ./jobs:/app/jobs
+      - ../photogrammetry_pipeline_project:/photogrammetry_pipeline_project
+    restart: unless-stopped
+
+volumes:
+  r2v_db:
+  r2v_minio:

@@ -1,0 +1,34 @@
+# R2V production reverse proxy + static frontend (Caddy v2).
+#
+# Caddy automatically obtains and renews Let's Encrypt TLS certificates for
+# every site label below, as long as the matching DNS A records point at this
+# server and ports 80/443 are reachable from the internet.
+#
+# Service names (api, minio) and ports match backend/docker-compose.yml.
+# Caddy preserves the incoming Host header on reverse_proxy by default, which is
+# REQUIRED so S3 SigV4 presigned URLs signed for files.realtwovirtual.com still
+# validate when proxied to MinIO.
+
+# Optional: set a contact email for Let's Encrypt expiry notices.
+# {
+#     email you@realtwovirtual.com
+# }
+
+realtwovirtual.com, www.realtwovirtual.com {
+    root * /srv/frontend
+    encode gzip
+    try_files {path} /index.html
+    file_server
+}
+
+api.realtwovirtual.com {
+    reverse_proxy api:8000
+}
+
+files.realtwovirtual.com {
+    # Allow large object uploads/downloads through to MinIO.
+    request_body {
+        max_size 200MB
+    }
+    reverse_proxy minio:9000
+}

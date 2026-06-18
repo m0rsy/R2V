@@ -1,0 +1,42 @@
+name: Deploy Flutter Web to Cloudflare Pages
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: flutter pub get
+
+      - name: Build web
+        working-directory: frontend
+        run: flutter build web --release
+
+      # Fix SPA refresh / deep links on Cloudflare Pages
+      - name: Add Pages redirects
+        run: |
+          echo "/*    /index.html   200" > frontend/build/web/_redirects
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: gradd
+          directory: frontend/build/web
+          branch: main
+
