@@ -1,19 +1,11 @@
 # R2V — Real to Virtual 3D Asset Platform
 
 <p align="center">
-  <img src="frontend/assets/R2Vlogo.png" alt="R2V Logo" width="120" />
+  <img src="frontend/assets/R2V.png" alt="R2V Logo" width="120" />
 </p>
 
 <p align="center">
   <strong>AI-powered platform for generating, scanning, managing, and selling 3D assets.</strong>
-</p>
-
-<p align="center">
-  <img alt="Flutter" src="https://img.shields.io/badge/Frontend-Flutter-02569B?logo=flutter&logoColor=white" />
-  <img alt="FastAPI" src="https://img.shields.io/badge/Backend-FastAPI-009688?logo=fastapi&logoColor=white" />
-  <img alt="PostgreSQL" src="https://img.shields.io/badge/Database-PostgreSQL-4169E1?logo=postgresql&logoColor=white" />
-  <img alt="Docker" src="https://img.shields.io/badge/Runtime-Docker-2496ED?logo=docker&logoColor=white" />
-  <img alt="AI" src="https://img.shields.io/badge/AI-Stable%20Diffusion%20%2B%20Hunyuan3D-8A2BE2" />
 </p>
 
 ---
